@@ -245,10 +245,7 @@ Function GrabADComputers {
     
     #Loop through AD computer and spit out a list
     foreach($record in $records) {
-        [PSCustomObject]@{
-            dnshostname = $record.Properties.dnshostname
-            lastlogon = [DateTime]::FromFileTime([Int64]::Parse($record.Properties.lastlogon))
-        }
+            $record.Properties.dnshostname
     } #end ForEach
 }
 
@@ -432,7 +429,7 @@ $namedNodes = $xaml.SelectNodes("//*[@*[contains(translate(name(.),'n','N'),'Nam
 $namedNodes | ForEach-Object {$wpf.Add($_.Name, $window.FindName($_.Name))}
 
 #Grab a list of all AD computers
-$computerList = GrabADComputers | Sort-Object dnshostname
+$computerList = GrabADComputers | Sort-Object
 
 #Set the image in the form
 $wpf.imgLogo.Source = $bitmap
@@ -440,7 +437,7 @@ $wpf.imgLogo.Source = $bitmap
 #Populate AD computers
 $wpf.btnRefreshComputers.add_Click({
     $wpf.lstADComputers.Items.Clear()
-    ForEach ($computer in $computerList.dnshostname) {$wpf.lstADComputers.Items.Add($computer)}
+    ForEach ($computer in $computerList) {$wpf.lstADComputers.Items.Add($computer)}
 })
 
 #Perform a form refresh
