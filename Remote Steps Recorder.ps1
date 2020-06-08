@@ -4,7 +4,8 @@
 	 Created on:   	29/05/2020 18:27
 	 Created by:   	Leee Jeffries
 	 GitHub link: 	TBC
-	 Twitter: 		@leeejeffries
+     Twitter: 		@leeejeffries
+     Credit:        Guy R Leech for the WTSSessions Function
 	===========================================================================
 	.DESCRIPTION
         This file will host a small GUI and allow the steps recorder to be run on a remote session to 
@@ -23,9 +24,7 @@ $bitmap.BeginInit()
 $bitmap.StreamSource = [System.IO.MemoryStream][System.Convert]::FromBase64String($base64IMG)
 $bitmap.EndInit()
 
-#Search for a folder location
-#Searches AD for computer objects
-
+#Utilising the WTSApi in order to obtain lists of remotely logged in users
 #requires -version 3
 <#
     Use WTSAPi32.dll to get sessions
@@ -154,6 +153,7 @@ Add-Type -ErrorAction Stop -TypeDefinition @'
     }
 '@ 
 
+#Get remotely logged in sessions
 Function Get-WTSSessionInformation
 {
     [cmdletbinding()]
@@ -232,6 +232,7 @@ Function Get-WTSSessionInformation
     }
 }
 
+#Searches AD for computer objects
 Function GrabADComputers {
     #Search through Active Directory for Computer Accounts
     $adSearcher = New-Object DirectoryServices.DirectorySearcher 
@@ -263,7 +264,7 @@ Function TestWinRM {
     }
 }
 
-#Run a remote scheduled task
+#Run the steps recorder
 Function RunRemoteTask {
     param (
         $cimSession,
@@ -302,6 +303,7 @@ Function RunRemoteTask {
     Get-ScheduledTask -CimSession $cimSession -TaskName 'PSRSTART' -TaskPath '\' | Start-ScheduledTask
 }
 
+#Stop the steps recorder
 Function StopRemoteTask {
     param (
         $cimSession,
@@ -338,19 +340,7 @@ Function StopRemoteTask {
     Unregister-ScheduledTask -CimSession $cimSession -TaskName 'PSRSTOP' -ErrorAction Ignore -Confirm:$false
 }
 
-Function CheckSteps {
-    param (
-        $cimSession,
-        $user
-    )
-        
-    #Execute TEMPTASK
-    Get-ScheduledTask -CimSession $cimSession -TaskName 'TEMPTASK' -TaskPath '\' | Stop-ScheduledTask
-
-    #Unregister TEMPTASK
-    Unregister-ScheduledTask -CimSession $cimSession -TaskName 'TEMPTASK' -ErrorAction Ignore -Confirm:$false
-}
-
+#Refreshes UI objects and updates the form
 Function RefreshStatus {
     #Create the remote connection
     $remoteConnection = New-CimSession -ComputerName $wpf.lstADComputers.SelectedItem -Name "CIM_$($wpf.lstADComputers.SelectedItem)"
@@ -382,8 +372,6 @@ Function RefreshStatus {
     #Remove the remote connection
     $remoteConnection | Remove-CimSession
 }
-
-#Function to remote open RDP with a specified computer name
 
 #GUI layout for the form
 [xml]$xaml = @"
@@ -455,6 +443,7 @@ $wpf.btnRefreshComputers.add_Click({
     ForEach ($computer in $computerList.dnshostname) {$wpf.lstADComputers.Items.Add($computer)}
 })
 
+#Perform a form refresh
 $wpf.lstADComputers.add_SelectionChanged({
     RefreshStatus
 })
@@ -485,7 +474,7 @@ $wpf.btnStopStepsRecorder.add_Click({
     $remoteConnection | Remove-CimSession 
 })
 
-#Check the folder location
+#Check the folder location is valid
 $wpf.txtNetworkLocation.add_SelectionChanged({
     if($wpf.txtNetworkLocation.Text) {
         if (Test-Path $wpf.txtNetworkLocation.Text) {
